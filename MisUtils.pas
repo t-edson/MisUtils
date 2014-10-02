@@ -2,6 +2,11 @@
  =============
  Por Tito Hinostroza 19/09/2014
  * Se agrega soporte para internacionalización, agregando un diccionario.
+ * Se agrega la función AddItemMenu(), para agregar ítems a un menú.
+ * Se agrega la función GetNewFileName(), para generar nombres distintos de archivos.
+ * Se agrega la función getNewFolderName(), para generar nombres distintos de carpetas.
+ * Se cambia nombre de AddItemMenu() a AddItemToMenu().
+ * Se crea el método CheckOnlyOneItem() para marcar un ítem de un menú.
 
  Descripción
  ============
@@ -15,7 +20,7 @@ unit MisUtils;
 interface
 
 uses  Classes, SysUtils, Forms, Graphics, Dialogs, process, Controls,
-      lclType, FileUtil, types, dateutils;
+      lclType, FileUtil, types, dateutils, Menus;
 
 var
   msjError  : string;       //mensaje de error de la aplicación
@@ -28,13 +33,22 @@ procedure MsgErr(txt: string);
 function MsgBox(txt: String; Caption: string = ''; flags: longint = 0): integer;
 procedure MsgBox(Fmt : String; const Args : Array of const);
 function MsgYesNo(txt: string): byte;
+function MsgYesNo(Fmt: string; const Args: array of const): byte;
 function MsgYesNoCancel(txt: string): byte;
 
 function Explode(delimiter:string; str:string; limit:integer=MaxInt):TStringDynArray;
 function Exec(com: string): boolean;
 procedure StringToFile(const s: string; const FileName: string);
 function StringFromFile(const FileName: string): string;
-
+//Utilidades para menús
+function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent): TMenuItem;
+procedure CheckOnlyOneItem(item: TMenuItem);
+procedure CheckOnlyOneItem(Menu: TMenuItem; Caption: string);
+//Genera un nombre distinto de archivo
+function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
+//Genera un nombre distinto de carpeta
+function GetNewFolderName(nomBase: String; maxNumFile: integer = 10): String;
+//Conversion de tipos a cadena
 Function f2N(s : String): Double;
 Function B2f(b : Boolean) : String;
 Function f2B(s : String) : Boolean;
@@ -42,10 +56,12 @@ Function D2f(d : TDateTime): String;
 Function f2D(s : String) : TDateTime;
 
 //Funciones del diccionario
+procedure dicClear;  //limpia el diccionario
 procedure dicSet(key, value: string);  //fija una entrada del diccionario
 procedure dicDel(key: string);  //limpia una entrada del diccionario
 procedure TransCapCtrls(TheForm: TForm; Caption, value: string);  //traduce un mensaje de un control
 function dic(key: string): string;     //lee un mensaje traducido
+function dic(Fmt : String; const Args : Array of const): string; //lee un mensaje traducido
 
 implementation
 
@@ -90,6 +106,23 @@ var
   r: Integer;
 begin
   Result := 0;  //Valor por defecto
+  if TranslateMsgs then txt := dic(txt);
+  r := Application.MessageBox(PChar(txt),'',MB_YESNO + MB_ICONQUESTION);
+  if r = IDYES then exit(1);
+  if r = IDNO  then exit(2);
+end;
+
+function MsgYesNo(Fmt: string; const Args: array of const): byte;
+//Muestra un mensaje en pantalla con los botones Yes - No
+//Devuelve 1, si para la opción Yes
+//Devuelve 2, si para la opción No
+var
+  r: Integer;
+  txt: String;
+begin
+  Result := 0;  //Valor por defecto
+  if TranslateMsgs then Fmt := dic(Fmt);
+  txt := Format(Fmt, Args);
   r := Application.MessageBox(PChar(txt),'',MB_YESNO + MB_ICONQUESTION);
   if r = IDYES then exit(1);
   if r = IDNO  then exit(2);
@@ -104,6 +137,7 @@ var
   r: Integer;
 begin
   Result := 0;  //Valor por defecto
+  if TranslateMsgs then txt := dic(txt);
   r := Application.MessageBox(PChar(txt),'',MB_YESNOCANCEL + MB_ICONQUESTION);
   if r = IDYES then exit(1);
   if r = IDNO  then exit(2);
@@ -149,7 +183,7 @@ begin
 end;
 
 procedure StringToFile(const s: string; const FileName: string);
-///   saves a string to a file
+///Guarda una cadena a un archivo. El archivo debe estar la codificaión del sistema.
 var
   FileStream: TFileStream;
 begin
@@ -158,10 +192,10 @@ begin
     FileStream.WriteBuffer(Pointer(s)^, (Length(s) * szChar));
   finally
     FreeAndNil(FileStream);
-  end; // try
+  end;
 end;
 function StringFromFile(const FileName: string): string;
-///   returns the content of the file as a string
+//Lee un archivo como una cadena.
 var
   FileStream: TFileStream;
 begin
@@ -171,8 +205,108 @@ begin
     FileStream.ReadBuffer(Pointer(Result)^, FileStream.Size);
   finally
     FreeAndNil(FileStream);
-  end; // try
+  end;
 end;
+//Utilidades para menús
+function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent
+  ): TMenuItem;
+//Agrega un ítema un menú. Devuelve la refrecnia ál nuevo ítem agregado.
+var
+  item: TMenuItem;
+begin
+  item := TMenuItem.Create(nil);
+  item.Caption:= txt;  //nombre
+  item.OnClick:=evento;
+  menu.Add(item);
+  Result := item;
+end;
+procedure CheckOnlyOneItem(item: TMenuItem);
+//Marca un ítem de un menú y deja los demás desmarcados
+var
+  MenuPadre: TMenuItem;
+  i: Integer;
+begin
+  MenuPadre := item.Parent;
+  if MenuPadre= nil then exit;
+  for i:=0 to MenuPadre.Count-1 do  //limpia todos
+    MenuPadre.Items[i].Checked := false;
+  item.Checked:=true;  //marca el ítem
+end;
+procedure CheckOnlyOneItem(Menu: TMenuItem; Caption: string);
+//Marca un ítem de un menú (usando su etiqueta) y deja los demás desmarcados.
+//Ignora la caja y el símbolo "&".
+var
+  MenuPadre: TMenuItem;
+  i: Integer;
+  capItem: String;
+  it: TMenuItem;
+begin
+  if Menu = nil then exit;  //proteción
+  //busca el ítem por su etiqueta
+  it := nil;
+  Caption := UpCase(Caption);
+  for i:=0 to Menu.Count-1 do begin
+    capItem := Upcase(Menu.Items[i].Caption);
+    capItem := StringReplace(capItem,'&','',[rfReplaceAll]);
+    if capItem = Caption then begin
+      it := Menu.Items[i];
+      break;
+    end;
+  end;
+  if it = nil then exit;   //no encontró
+  CheckOnlyOneItem(it);   //marca
+end;
+
+function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
+{Genera un nombre diferente de archivo, tomando el nombre dado como raiz.}
+var i : Integer;    //Número de intentos con el nombre de archivo de salida
+    cadBase : String;   //Cadena base del nombre base
+    extArc: string;    //extensión
+
+  function NombArchivo(i: integer): string;
+  begin
+    Result := cadBase + '-' + IntToStr(i) + extArc;
+  end;
+
+begin
+   Result := nomBase;  //nombre por defecto
+   extArc := ExtractFileExt(nomBase);
+   if ExtractFilePath(nomBase) = '' then exit;  //protección
+   //quita ruta y cambia extensión
+   cadBase := ChangeFileExt(nomBase,'');
+   //busca archivo libre
+   for i := 0 to maxNumFile-1 do begin
+      If not FileExists(NombArchivo(i)) then begin
+        //Se encontró nombre libre
+        Exit(NombArchivo(i));  //Sale con nombre
+      end;
+   end;
+   //todos los nombres estaban ocupados. Sale con el mismo nombre
+End;
+function GetNewFolderName(nomBase: String; maxNumFile: integer = 10): String;
+{Genera un nombre diferente de archivo, tomando el nombre dado como raiz.}
+var i : Integer;    //Número de intentos con el nombre de archivo de salida
+    cadBase : String;   //Cadena base del nombre base
+
+  function NombFolder(i: integer): string;
+  begin
+    Result := cadBase + '-' + IntToStr(i);
+  end;
+
+begin
+   Result := nomBase;  //nombre por defecto
+//   cadBase := ExtractFilePath(nomBase);
+   cadBase := nomBase;
+   if cadBase = '' then exit;  //protección
+   //busca archivo libre
+   for i := 0 to maxNumFile-1 do begin
+      If not DirectoryExists(NombFolder(i)) then begin
+        //Se encontró nombre libre
+        Exit(NombFolder(i));  //Sale con nombre
+      end;
+   end;
+   //todos los nombres estaban ocupados. Sale con el mismo nombre
+End;
 
 //############## Funciones de conversión de datos para acceso a disco ############
 {Function N2f(n As Single):String;
@@ -236,12 +370,18 @@ begin
 End;
 }
 
+procedure dicClear;
+//Limpia el diccionario, de modo que no se traducirá ningún mensaje
+begin
+  dictionary.Clear;
+end;
 procedure dicSet(key, value: string);
 //Fija o agrega una entrada al diccionario
 begin
+  //los símbolos "=", no se pueden ingresar
+  key := StringReplace(key, '=', #31, [rfReplaceAll]);
   dictionary.values[key]:=value;
 end;
-
 procedure dicDel(key: string);
 //Limpia una entrada del diccionario
 begin
@@ -264,9 +404,17 @@ function dic(key: string): string;
 //Devuelve un mensaje en el lenguaje definido, dada la clave.
 //La clave no puede tener el signo "="
 begin
+  key := StringReplace(key, '=', #31, [rfReplaceAll]);  //codifica la clave
   Result := dictionary.Values[key];
   //si no enecuentra, devuelve la misma clave
   if Result = '' then Result := key;
+end;
+function dic(Fmt: String; const Args: array of const): string;
+var
+  txt: String;
+begin
+  txt := dic(Fmt);  //busca
+  Result := Format(txt, Args);  //completa
 end;
 
 Initialization
