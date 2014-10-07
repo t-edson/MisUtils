@@ -14,7 +14,7 @@ Inside this unit, we have this functions for showing messages:
 
 Moreover, this unit includes a diccionary for translating messages. For to use it, are  declared the next fileds:
 
-* TranslateMsgs -> Flag for to enable the translation of  messages used with MsgBox(), MsgExc() and MsgErr().
+* TranslateMsgs -> Flag for to enable the translation of  messages used with MsgBox(), MsgExc() and MsgErr(), MsgYesNo() and MsgYesNoCancel().
 * dic() -> Translates one string using the internal dictionary.
 * dicSet() -> Adds or replace an entry of the internal dictionary.
 * dicDel() -> Cleans an entry of the internal dictionary.
