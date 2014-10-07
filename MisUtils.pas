@@ -1,4 +1,4 @@
-{MisUtils 0.1b
+{MisUtils 0.1
  =============
  Por Tito Hinostroza 19/09/2014
  * Se agrega soporte para internacionalización, agregando un diccionario.
@@ -7,11 +7,12 @@
  * Se agrega la función getNewFolderName(), para generar nombres distintos de carpetas.
  * Se cambia nombre de AddItemMenu() a AddItemToMenu().
  * Se crea el método CheckOnlyOneItem() para marcar un ítem de un menú.
+ * Se agrega otra forma de MsgYesNoCancel(), para que acepte arreglo de constantes.
 
  Descripción
  ============
  Librería de funciones útiles para mostrar mensajes en pantalla, para guardar datos en
- archivos, para crear aplicaciones en variso idiomas y algunas utilidades adicionales.
+ archivos, para crear aplicaciones en varios idiomas y algunas utilidades adicionales.
  }
 unit MisUtils;
 
@@ -35,8 +36,9 @@ procedure MsgBox(Fmt : String; const Args : Array of const);
 function MsgYesNo(txt: string): byte;
 function MsgYesNo(Fmt: string; const Args: array of const): byte;
 function MsgYesNoCancel(txt: string): byte;
+function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
 
-function Explode(delimiter:string; str:string; limit:integer=MaxInt):TStringDynArray;
+function Explode(delimiter:string; str:string):TStringDynArray;
 function Exec(com: string): boolean;
 procedure StringToFile(const s: string; const FileName: string);
 function StringFromFile(const FileName: string): string;
@@ -144,24 +146,42 @@ begin
   if r = IDCANCEL  then exit(3);
 end;
 
-function Explode(delimiter:string; str:string; limit:integer=MaxInt):TStringDynArray;
+function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
+//Muestra un mensaje en pantalla con los botones Yes - No - Cancel
+//Devuelve 1, si para la opción Yes
+//Devuelve 2, si para la opción No
+//Devuelve 3, si para la opción Cancel
 var
-  p,cc,dsize:integer;
+  r: Integer;
+  txt: String;
 begin
-  cc := 0;
+  Result := 0;  //Valor por defecto
+  if TranslateMsgs then Fmt := dic(Fmt);
+  txt := Format(Fmt, Args);
+  r := Application.MessageBox(PChar(txt),'',MB_YESNOCANCEL + MB_ICONQUESTION);
+  if r = IDYES then exit(1);
+  if r = IDNO  then exit(2);
+  if r = IDCANCEL  then exit(3);
+end;
+
+function Explode(delimiter:string; str:string):TStringDynArray;
+var
+  p, n, dsize:integer;
+begin
+  n := 0;
   dsize := length(delimiter);
-  while cc+1 < limit do begin
+  while true do begin
     p := pos(delimiter,str);
     if p > 0 then begin
-      inc(cc);
-      setlength(result,cc);
-      result[cc-1] := copy(str,1,p-1);
+      inc(n);
+      SetLength(Result,n);
+      Result[n-1] := copy(str,1,p-1);
       delete(str,1,p+dsize-1);
     end else break;
   end;
-  inc(cc);
-  setlength(result,cc);
-  result[cc-1] := str;
+  inc(n);
+  SetLength(Result,n);
+  Result[n-1] := str;
 end;
 
 function Exec(com: string): boolean;

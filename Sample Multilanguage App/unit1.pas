@@ -54,7 +54,7 @@ begin
     Button1.Caption := 'Send';
     Label1.Caption := 'Name:';
     //Update messages
-    dicDel('Hello');  //it's yet in English
+    dicClear;  //it's yet in English
   end;
   'es': begin
     Button1.Caption := 'Enviar';
