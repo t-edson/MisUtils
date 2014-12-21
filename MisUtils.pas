@@ -1,13 +1,8 @@
-{MisUtils 0.1
+{MisUtils 0.2
  =============
- Por Tito Hinostroza 19/09/2014
- * Se agrega soporte para internacionalización, agregando un diccionario.
- * Se agrega la función AddItemMenu(), para agregar ítems a un menú.
- * Se agrega la función GetNewFileName(), para generar nombres distintos de archivos.
- * Se agrega la función getNewFolderName(), para generar nombres distintos de carpetas.
- * Se cambia nombre de AddItemMenu() a AddItemToMenu().
- * Se crea el método CheckOnlyOneItem() para marcar un ítem de un menú.
- * Se agrega otra forma de MsgYesNoCancel(), para que acepte arreglo de constantes.
+ Por Tito Hinostroza 17/10/2014
+ * Se agregan nuevas formas de MsgExc() y MsgExc() para que tengan las mismas
+ funcionalidades que MsgBox().
 
  Descripción
  ============
@@ -28,8 +23,10 @@ var
   dictionary: TstringList;  //diccionario para el manejo de mensajes
   TranslateMsgs: boolean;   //activa la traducción del mensaje
 
-procedure MsgExc(txt: string);
-procedure MsgErr(txt: string);
+procedure MsgExc(txt: string; Caption: string = '');
+procedure MsgExc(Fmt: String; const Args: array of const);
+procedure MsgErr(txt: string; Caption: string = '');
+procedure MsgErr(Fmt: String; const Args: array of const);
 //function MsgBox(txt: PChar; Caption: string = ''; flags: longint = 0): integer;
 function MsgBox(txt: String; Caption: string = ''; flags: longint = 0): integer;
 procedure MsgBox(Fmt : String; const Args : Array of const);
@@ -69,17 +66,33 @@ implementation
 
 const szChar = SizeOf(Char);
 
-procedure MsgExc(txt: string);
+procedure MsgExc(txt: string; Caption: string = '');
 //Mensaje de exclamación
 begin
   if TranslateMsgs then txt := dic(txt);
   Application.MessageBox(PChar(txt), '', MB_ICONEXCLAMATION);
 end;
-procedure MsgErr(txt: string);
+procedure MsgExc(Fmt: String; const Args: array of const);
+var
+  txt: String;
+begin
+  if TranslateMsgs then Fmt := dic(Fmt);
+  txt := Format(Fmt, Args);
+  Application.MessageBox(Pchar(txt), '', MB_ICONEXCLAMATION);
+end;
+procedure MsgErr(txt: string; Caption: string = '');
 //Mensaje de error
 begin
   if TranslateMsgs then txt := dic(txt);
   Application.MessageBox(PChar(txt), '', MB_ICONERROR);
+end;
+procedure MsgErr(Fmt: String; const Args: array of const);
+var
+  txt: String;
+begin
+  if TranslateMsgs then Fmt := dic(Fmt);
+  txt := Format(Fmt, Args);
+  Application.MessageBox(Pchar(txt), '', MB_ICONERROR);
 end;
 {function MsgBox(txt: PChar; Caption: string = ''; flags: longint = 0): integer;
 begin

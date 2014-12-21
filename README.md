@@ -1,4 +1,4 @@
-MisUtils 0.1
+MisUtils 0.2
 ============
 
 Useful routines for Lazarus, for showing messages and developing multilingual applications.
