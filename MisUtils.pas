@@ -3,6 +3,7 @@
  Por Tito Hinostroza 17/10/2014
  * Se agregan nuevas formas de MsgExc() y MsgExc() para que tengan las mismas
  funcionalidades que MsgBox().
+ * Se corrige uso de parámetro "Caption" en MsgExc()
 
  Descripción
  ============
@@ -70,7 +71,7 @@ procedure MsgExc(txt: string; Caption: string = '');
 //Mensaje de exclamación
 begin
   if TranslateMsgs then txt := dic(txt);
-  Application.MessageBox(PChar(txt), '', MB_ICONEXCLAMATION);
+  Application.MessageBox(PChar(txt), PChar(Caption), MB_ICONEXCLAMATION);
 end;
 procedure MsgExc(Fmt: String; const Args: array of const);
 var
@@ -84,7 +85,7 @@ procedure MsgErr(txt: string; Caption: string = '');
 //Mensaje de error
 begin
   if TranslateMsgs then txt := dic(txt);
-  Application.MessageBox(PChar(txt), '', MB_ICONERROR);
+  Application.MessageBox(PChar(txt), PChar(Caption), MB_ICONERROR);
 end;
 procedure MsgErr(Fmt: String; const Args: array of const);
 var
@@ -269,7 +270,6 @@ procedure CheckOnlyOneItem(Menu: TMenuItem; Caption: string);
 //Marca un ítem de un menú (usando su etiqueta) y deja los demás desmarcados.
 //Ignora la caja y el símbolo "&".
 var
-  MenuPadre: TMenuItem;
   i: Integer;
   capItem: String;
   it: TMenuItem;
