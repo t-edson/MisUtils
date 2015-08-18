@@ -1,4 +1,4 @@
-MisUtils 0.2
+MisUtils 0.3
 ============
 
 Useful routines for Lazarus, for showing messages and developing multilingual applications.
@@ -20,4 +20,53 @@ Moreover, this unit includes a diccionary for translating messages. For to use i
 * dicDel() -> Cleans an entry of the internal dictionary.
 * dicClear() -> Removes all entries of the internal dictionary.
 
+The translation feature, for the source code, works in the following way:
 
+* There is an internal dictionary (called "dictionary") defined in the Unit "MisUtils". It is a public field, created in the "Initialization" section.
+* This dictionary contain several entries of the form (key -> value).
+* The "key" field of the dictionary is a string with a text in the language that the program is codified (like: cad :=  dic("hello"); ).
+* The "value" field of the dictionary is a string with a text that is the translation of the "key" text ( "hello" -> "hola").
+* Thus, the dictionary contains the translation of all strings of the source (using the dictionary) for an unique language.
+* Every time, it's needed to change the language, the dictionary must be filled with new "value" strings for the new language.
+
+So for to have the translation working, the dictionary must be first filled.
+
+How to fill the dictionary?
+It's done using dicSet(). The recommended way is to use a procedure like this:
+
+```
+procedure TForm1.SetLanguage(lang: string);
+begin
+  case lang of
+  'en': begin
+    dicClear;  //if it's yet in English
+  end;
+  'es': begin
+    dicSet('Hello','Hola');
+    dicSet('Bye','Adios');
+  end;
+  ...
+  end;
+end;
+```
+The text used in the first parameter of dicSet(), must correspond exactly to the text used on the other parts of the source code.
+
+After filled the dictionary, how do I put the text in my code?
+
+The formal way is to use dic(), for every string that need to be translated. So if you have in your code:
+
+```
+   varStr := 'Hello';   
+```
+
+then you would need to change it, for:
+
+```
+   varStr := dic('Hello');  //we asume that we already have translated 'Hello' with dicSet().
+```
+
+dic() can work similar to Format() too, because have an overloaded version.
+
+For to show messages, it's possible to use the special functions of "MisUtils" like MsgBox() or MsgExc() that perform the translation without using dic().
+
+For more information, check the sample codes.

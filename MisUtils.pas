@@ -1,9 +1,9 @@
-{MisUtils 0.2
+{MisUtils 0.3
  =============
- Por Tito Hinostroza 17/10/2014
- * Se agregan nuevas formas de MsgExc() y MsgExc() para que tengan las mismas
- funcionalidades que MsgBox().
- * Se corrige uso de parámetro "Caption" en MsgExc()
+ Por Tito Hinostroza 13/05/2015
+ * Se agregan las funciones S2f()y f2S(), para guardar/leer cadenas en disco.
+ * Se agrega la función AnchorTo(), para facilitar el alineamiento de controles.
+ * Se agrega la función  console(), para facilitar enviar mensajes a consola.
 
  Descripción
  ============
@@ -17,13 +17,13 @@ unit MisUtils;
 interface
 
 uses  Classes, SysUtils, Forms, Graphics, Dialogs, process, Controls,
-      lclType, FileUtil, types, dateutils, Menus;
+      lclType, FileUtil, types, dateutils, strutils, Menus, LCLProc, LCLIntf;
 
 var
   msjError  : string;       //mensaje de error de la aplicación
   dictionary: TstringList;  //diccionario para el manejo de mensajes
   TranslateMsgs: boolean;   //activa la traducción del mensaje
-
+//funciones para mostrar mensajes
 procedure MsgExc(txt: string; Caption: string = '');
 procedure MsgExc(Fmt: String; const Args: array of const);
 procedure MsgErr(txt: string; Caption: string = '');
@@ -35,9 +35,11 @@ function MsgYesNo(txt: string): byte;
 function MsgYesNo(Fmt: string; const Args: array of const): byte;
 function MsgYesNoCancel(txt: string): byte;
 function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
-
+//funciones diversas
 function Explode(delimiter:string; str:string):TStringDynArray;
 function Exec(com: string): boolean;
+procedure AnchorTo(Ctl: TControl; Side: TAnchorKind; Sibling: TControl;
+  Space: integer = 0; Internal: Boolean = false);
 procedure StringToFile(const s: string; const FileName: string);
 function StringFromFile(const FileName: string): string;
 //Utilidades para menús
@@ -54,6 +56,8 @@ Function B2f(b : Boolean) : String;
 Function f2B(s : String) : Boolean;
 Function D2f(d : TDateTime): String;
 Function f2D(s : String) : TDateTime;
+Function S2f(s : String) : String;
+function f2S(s : String) : String;
 
 //Funciones del diccionario
 procedure dicClear;  //limpia el diccionario
@@ -62,10 +66,17 @@ procedure dicDel(key: string);  //limpia una entrada del diccionario
 procedure TransCapCtrls(TheForm: TForm; Caption, value: string);  //traduce un mensaje de un control
 function dic(key: string): string;     //lee un mensaje traducido
 function dic(Fmt : String; const Args : Array of const): string; //lee un mensaje traducido
+procedure console(Fmt : String; const Args : Array of const);  //muestra mensaje en consola
+procedure consoleTickStart;  //inicia contador de tiempo
+procedure consoleTickCount(msg: string);  //muestra diferencia de tiempo
+
 
 implementation
+const
+  szChar = SizeOf(Char);
 
-const szChar = SizeOf(Char);
+var
+  timeCnt: types.DWORD;  //contador para medir intervalos de tiempo
 
 procedure MsgExc(txt: string; Caption: string = '');
 //Mensaje de exclamación
@@ -113,7 +124,6 @@ begin
   txt := Format(Fmt, Args);
   Application.MessageBox(Pchar(txt), '', 0);
 end;
-
 function MsgYesNo(txt: string): byte;
 //Muestra un mensaje en pantalla con los botones Yes - No
 //Devuelve 1, si para la opción Yes
@@ -127,7 +137,6 @@ begin
   if r = IDYES then exit(1);
   if r = IDNO  then exit(2);
 end;
-
 function MsgYesNo(Fmt: string; const Args: array of const): byte;
 //Muestra un mensaje en pantalla con los botones Yes - No
 //Devuelve 1, si para la opción Yes
@@ -143,7 +152,6 @@ begin
   if r = IDYES then exit(1);
   if r = IDNO  then exit(2);
 end;
-
 function MsgYesNoCancel(txt: string): byte;
 //Muestra un mensaje en pantalla con los botones Yes - No - Cancel
 //Devuelve 1, si para la opción Yes
@@ -159,7 +167,6 @@ begin
   if r = IDNO  then exit(2);
   if r = IDCANCEL  then exit(3);
 end;
-
 function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
 //Muestra un mensaje en pantalla con los botones Yes - No - Cancel
 //Devuelve 1, si para la opción Yes
@@ -177,7 +184,7 @@ begin
   if r = IDNO  then exit(2);
   if r = IDCANCEL  then exit(3);
 end;
-
+//funciones diversas
 function Explode(delimiter:string; str:string):TStringDynArray;
 var
   p, n, dsize:integer;
@@ -197,7 +204,6 @@ begin
   SetLength(Result,n);
   Result[n-1] := str;
 end;
-
 function Exec(com: string): boolean;
 //Ejecuta un programa. Devuelve FALSE si hubo error
 var
@@ -215,7 +221,38 @@ begin
   end;
   p.Free;
 end;
-
+procedure AnchorTo(Ctl: TControl; Side: TAnchorKind; Sibling: TControl;
+  Space: integer = 0; Internal: Boolean = false);
+{Utilidad para facilitar el anclaje a un control vecino, o a un contenedor.
+Es una versión de AnchorToNeighbour(), ampliada. La idea es que se alínie
+un control al lado del otro. Si "Internal" es true, el alineamiento se hará
+en sentido opuesto}
+begin
+    Ctl.AnchorSide[Side].Control:=Sibling;  //define vecino
+    case Side of
+    akLeft: begin
+      Ctl.BorderSpacing.Left:=Space;
+      if Internal then Ctl.AnchorSide[Side].Side:=asrLeft
+      else Ctl.AnchorSide[Side].Side:=asrRight;
+    end;
+    akTop: begin
+      Ctl.BorderSpacing.Top:=Space;
+      if Internal then Ctl.AnchorSide[Side].Side:=asrTop
+      else Ctl.AnchorSide[Side].Side:=asrBottom;
+    end;
+    akRight: begin
+      Ctl.BorderSpacing.Right:=Space;
+      if Internal then Ctl.AnchorSide[Side].Side:=asrRight
+      else Ctl.AnchorSide[Side].Side:=asrLeft;
+    end;
+    akBottom: begin
+      Ctl.BorderSpacing.Bottom:=Space;
+      if Internal then Ctl.AnchorSide[Side].Side:=asrBottom
+      else Ctl.AnchorSide[Side].Side:=asrTop;
+    end;
+    end;
+    Ctl.Anchors:=Ctl.Anchors+[Side];  //agrega bandera de anclaje
+end;
 procedure StringToFile(const s: string; const FileName: string);
 ///Guarda una cadena a un archivo. El archivo debe estar la codificaión del sistema.
 var
@@ -365,7 +402,6 @@ function f2B(s: String): Boolean;
 begin
     If s = 'V' Then exit(True) else exit(False);
 End;
-
 function D2f(d: TDateTime): String;
 //Convierte fecha a cadena para guardar en disco.
 var
@@ -374,7 +410,6 @@ begin
   DateTimeToString(s,'yyyy:mm:dd:hh:nn:ss',d);
   Result :=  s;
 End;
-
 function f2D(s: String): TDateTime;
 //Convierte cadena de disco a fecha.
 var a: TStringDynArray;
@@ -384,24 +419,17 @@ begin
   Result := EncodeDateTime(StrToInt(a[0]), StrToInt(a[1]), StrToInt(a[2]),
                            StrToInt(a[3]), StrToInt(a[4]), StrToInt(a[5]), 0);
 End;
-
-{
-Function S2f(s : String) : String;
-//Convierte cadena a formato para guardar en disco.
-var tmp : String;
+function S2f(s : String) : String;
+//Convierte cadena a formato para guardar en disco, en una línea.
 begin
-    tmp = Replace(s, vbTab, "\t")   'no se permiten tabulaciones
-    S2f = Replace(s, vbCrLf, "\n")  'tampoco saltos de línea
-End;
-
-Function f2S(s : String) : String;
-//Convierte cadena de disco a cadena.
-var tmp : String;
+  Result := ReplaceText(s, LineEnding, #1);
+end;
+function f2S(s : String) : String;
+//Convierte cadena leída de disco a cadena multilínea.
 begin
-    tmp = Replace(s, "\t", vbTab)   'recupera tabulaciones
-    f2S = Replace(s, "\n", vbCrLf)  'y saltos de línea
-End;
-}
+  Result := ReplaceText(s, #1, LineEnding);
+end;
+
 
 procedure dicClear;
 //Limpia el diccionario, de modo que no se traducirá ningún mensaje
@@ -439,7 +467,7 @@ function dic(key: string): string;
 begin
   key := StringReplace(key, '=', #31, [rfReplaceAll]);  //codifica la clave
   Result := dictionary.Values[key];
-  //si no enecuentra, devuelve la misma clave
+  //si no encuentra, devuelve la misma clave
   if Result = '' then Result := key;
 end;
 function dic(Fmt: String; const Args: array of const): string;
@@ -448,6 +476,21 @@ var
 begin
   txt := dic(Fmt);  //busca
   Result := Format(txt, Args);  //completa
+end;
+procedure console(Fmt: String; const Args: array of const);
+begin
+  debugln(Format(Fmt, Args));  //completa
+end;
+procedure consoleTickStart;
+//Inicia el contador de milisegundos
+begin
+  timeCnt:=GetTickCount;
+end;
+procedure consoleTickCount(msg: string);
+//Muestra la diferencia de tiempo transcurrido, e inicia otra cuenta
+begin
+  debugln(msg + ':' + IntToStr(GetTickCount-timeCnt));
+  timeCnt := GetTickCount;
 end;
 
 Initialization
