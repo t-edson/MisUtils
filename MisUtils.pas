@@ -465,7 +465,7 @@ function dic(key: string): string;
 //Devuelve un mensaje en el lenguaje definido, dada la clave.
 //La clave no puede tener el signo "="
 begin
-  key := StringReplace(key, '=', #31, [rfReplaceAll]);  //codifica la clave
+  key := StringReplace(key, #31, '=', [rfReplaceAll]);  //codifica la clave
   Result := dictionary.Values[key];
   //si no encuentra, devuelve la misma clave
   if Result = '' then Result := key;
