@@ -1,9 +1,10 @@
-{MisUtils 0.3
- =============
+{MisUtils 0.4
+ ============
  Por Tito Hinostroza 13/05/2015
- * Se agregan las funciones S2f()y f2S(), para guardar/leer cadenas en disco.
- * Se agrega la función AnchorTo(), para facilitar el alineamiento de controles.
- * Se agrega la función  console(), para facilitar enviar mensajes a consola.
+* Se agregan las funciones N2f(), I2f() y f2I().
+* Se modifica Exec() para no usar CommandLine, ya que está obsoleto.
+* Se sobrecargan las funciones f2D(), f2I() para sopotar WideString.
+* Se cambia el parámetro de N2f(), de "Single" a "Double".
 
  Descripción
  ============
@@ -37,7 +38,7 @@ function MsgYesNoCancel(txt: string): byte;
 function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
 //funciones diversas
 function Explode(delimiter:string; str:string):TStringDynArray;
-function Exec(com: string): boolean;
+function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 procedure AnchorTo(Ctl: TControl; Side: TAnchorKind; Sibling: TControl;
   Space: integer = 0; Internal: Boolean = false);
 procedure StringToFile(const s: string; const FileName: string);
@@ -51,11 +52,17 @@ function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
 //Genera un nombre distinto de carpeta
 function GetNewFolderName(nomBase: String; maxNumFile: integer = 10): String;
 //Conversion de tipos a cadena
+function I2f(n: Integer):String;
+Function f2I(s : String): Integer;
+Function f2I(s : WideString): Integer;
+function N2f(n: Double):String;
 Function f2N(s : String): Double;
+Function f2N(s : WideString): Double;
 Function B2f(b : Boolean) : String;
 Function f2B(s : String) : Boolean;
 Function D2f(d : TDateTime): String;
 Function f2D(s : String) : TDateTime;
+Function f2D(s : WideString) : TDateTime;
 Function S2f(s : String) : String;
 function f2S(s : String) : String;
 
@@ -204,20 +211,23 @@ begin
   SetLength(Result,n);
   Result[n-1] := str;
 end;
-function Exec(com: string): boolean;
+function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 //Ejecuta un programa. Devuelve FALSE si hubo error
 var
   p    : TProcess;   //el proceso a manejar
 begin
   Result := true;
   p := TProcess.Create(nil); //Crea proceso
-//  p.CommandLine := SysToUTF8(Application.ExeName +  arc0 + parMsg);
-  p.CommandLine := SysToUTF8(com);
+  if WaitOnExit then p.Options:= p.Options + [poWaitOnExit];
+  //p.CommandLine := SysToUTF8(com);
+  p.Executable:=com;
+  p.Parameters.Clear;
+  p.Parameters.Add(par);
   try
     p.Execute;
   except
     Result := false;
-    MsgBox('Fallo al iniciar aplicativo: '+ p.CommandLine);;
+    MsgBox('Fallo al iniciar aplicativo: '+ p.Executable);;
   end;
   p.Free;
 end;
@@ -379,24 +389,40 @@ begin
 End;
 
 //############## Funciones de conversión de datos para acceso a disco ############
-{Function N2f(n As Single):String;
+function I2f(n: Integer): String;
+begin
+   Result := IntToStr(n);
+end;
+
+function f2I(s: String): Integer;
+begin
+   Result := StrToInt(s);
+end;
+function f2I(s: WideString): Integer;
+begin
+  Result := StrToInt(AnsiString(s));
+end;
+
+function N2f(n: Double):String;
 //Convierte número a cadena para guardar en disco. Independiente de la configuración regional
 begin
-    N2f = Replace(CStr(n), ",", ".")    //asegura que se usa siempre el punto decimal
+    Result := FloatToStr(n);
 End;
-}
+
 function f2N(s: String): Double;
 //Convierte cadena de disco a número. Independiente de la configuración regional
 begin
     Result := StrToFloat(s);     //usa siempre el punto decimal
 End;
-
+function f2N(s: WideString): Double;
+begin
+  Result := StrToFloat(AnsiString(s));     //usa siempre el punto decimal
+end;
 function B2f(b: Boolean): String;
 //Convierte Boleean a cadena para guardar en disco.
 begin
     If b Then Result := 'V' Else Result := 'F';
 End;
-
 function f2B(s: String): Boolean;
 //Convierte cadena de disco a Boleean
 begin
@@ -414,11 +440,19 @@ function f2D(s: String): TDateTime;
 //Convierte cadena de disco a fecha.
 var a: TStringDynArray;
 begin
-//    If (s = '0') Or (s = '') Then Exit Function   //para proteger de las versiones anteriores
   a := explode(':',s);
   Result := EncodeDateTime(StrToInt(a[0]), StrToInt(a[1]), StrToInt(a[2]),
                            StrToInt(a[3]), StrToInt(a[4]), StrToInt(a[5]), 0);
 End;
+function f2D(s: WideString): TDateTime;
+var
+  a: TStringDynArray;
+begin
+  a := explode(':', AnsiString(s));
+  Result := EncodeDateTime(StrToInt(a[0]), StrToInt(a[1]), StrToInt(a[2]),
+                           StrToInt(a[3]), StrToInt(a[4]), StrToInt(a[5]), 0);
+end;
+
 function S2f(s : String) : String;
 //Convierte cadena a formato para guardar en disco, en una línea.
 begin
@@ -489,7 +523,7 @@ end;
 procedure consoleTickCount(msg: string);
 //Muestra la diferencia de tiempo transcurrido, e inicia otra cuenta
 begin
-  debugln(msg + ':' + IntToStr(GetTickCount-timeCnt));
+  debugln(msg + ':' + IntToStr(GetTickCount-timeCnt) + 'mseg');
   timeCnt := GetTickCount;
 end;
 
