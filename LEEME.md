@@ -107,13 +107,13 @@ Para realizar el movimiento de datos. Así por ejemplo, lo normal es leer todas 
 
 También es común que al terminar la aplicación se llame a PropertiesToFile() para mantener el valor de las variables asociadas.
  
- Todo este manejo de las propiedades, se puede hacer en el formulario principal, pero lo recomendable es crear un formulario especial o diálogo, de configuración, de modo que incluya los botones ACPETAR y CANCELAR. En este caso, solo cuando se acepten los cambios se debe llamar a WindowToProperties().
+Todo este manejo de las propiedades, se puede hacer en el formulario principal, pero lo recomendable es crear un formulario especial o diálogo, de configuración, de modo que incluya los botones ACPETAR y CANCELAR. En este caso, solo cuando se acepten los cambios se debe llamar a WindowToProperties().
 
- Para ver el código de una implementación de este tipo, se recomienda leer los proyectos de ejemplo que vienen en la librería.
+Para ver el código de una implementación de este tipo, se recomienda leer los proyectos de ejemplo que vienen en la librería.
  
- ### Asociando solamente propiedades a un archivo:
+### Asociando solamente propiedades a un archivo:
  
- Esta forma de trabajo, se puede usar cuando no es necesario editar las propiedades en controles, porque usualmente tienen otros medio para modificarse, como podría ser el ancho o el alto de la ventana principal.
+Esta forma de trabajo, se puede usar cuando no es necesario editar las propiedades en controles, porque usualmente tienen otros medio para modificarse, como podría ser el ancho o el alto de la ventana principal.
 
 ```
  +-----------+                  +-------------+ 
