@@ -72,6 +72,7 @@ Esta es la forma más común, cuando se trabaja con formularios o diálogos de c
 
 El siguiente diagrama muestra el flujo de información, y los métodos que permiten realizar ese flujo:
 
+```
  +-----------+                  +-------------+                    +------------+
  |           | FileToProperties |             | PropertiesToWindow |            |
  |           | ---------------> |             | -----------------> |            |
@@ -79,6 +80,7 @@ El siguiente diagrama muestra el flujo de información, y los métodos que permi
  |  (File)   | PropertiesToFile |(Properties) | WindowToProperties | (Window)   |
  |           | <--------------- |             | <----------------- |            |
  +-----------+                  +-------------+                    +------------+
+```
 
 De acuerdo al formato de archivo a manejar, se deberá usar la unidad TMiConfigINI o TMiConfigXML. 
 
@@ -110,7 +112,10 @@ También es común que al terminar la aplicación se llame a PropertiesToFile() 
  Para ver el código de una implementación de este tipo, se recomienda leer los proyectos de ejemplo que vienen en la librería.
  
  ### Asociando solamente propiedades a un archivo:
+ 
+ Esta forma de trabajo, se puede usar cuando no es necesario editar las propiedades en controles, porque usualmente tienen otros medio para modificarse, como podría ser el ancho o el alto de la ventana principal.
 
+```
  +-----------+                  +-------------+ 
  |           | FileToProperties |             | 
  |           | ---------------> |             | 
@@ -118,9 +123,11 @@ También es común que al terminar la aplicación se llame a PropertiesToFile() 
  |  (File)   | PropertiesToFile |(Properties) | 
  |           | <--------------- |             | 
  +-----------+                  +-------------+ 
+```
 
 ### Asociando solamente propiedades a controles:
 
+```
                                 +-------------+                    +------------+
                                 |             | PropertiesToWindow |            |
                                 |             | -----------------> |            |
@@ -128,6 +135,7 @@ También es común que al terminar la aplicación se llame a PropertiesToFile() 
                                 |(Properties) | WindowToProperties | (Window)   |
                                 |             | <----------------- |            |
                                 +-------------+                    +------------+
+```
 
 								
 
