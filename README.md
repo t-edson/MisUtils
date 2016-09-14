@@ -12,7 +12,7 @@ Inside this unit, we have this functions for showing messages:
 * MsgYesNo() -> Prompt for a Yes/No answer.
 * MsgYesNoCancel() -> Prompt for a Yes/No answer, with a cancel option.
 
-Moreover, this unit includes a diccionary for translating messages. For to use it, are  declared the next fields:
+Moreover, this unit includes a diccionary for translating messages. To use it, are  declared the next functions:
 
 * TranslateMsgs -> Flag for to enable the translation of  messages used with MsgBox(), MsgExc() and MsgErr(), MsgYesNo() and MsgYesNoCancel().
 * dic() -> Translates one string using the internal dictionary.
