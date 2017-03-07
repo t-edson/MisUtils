@@ -4,6 +4,7 @@ MisUtils 0.6b
 Por Tito Hinostroza 06/02/2017
 * Se agrega la función LoadPNGToImageList()
 * Se agrega la función AddStringToFile().
+* Se agrega una versión simple el método Join().
 
 MisUtils 0.5b
 ============
