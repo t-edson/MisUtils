@@ -1,5 +1,12 @@
-{MisUtils 0.5b
- ============
+{
+MisUtils 0.6b
+============
+Por Tito Hinostroza 06/02/2017
+* Se agrega la función LoadPNGToImageList()
+* Se agrega la función AddStringToFile().
+
+MisUtils 0.5b
+============
  Por Tito Hinostroza 13/05/2015
 * Se agregan las funciones DT2Number() and Number2DT().
 * Se agrega la función StringLike().
@@ -8,6 +15,8 @@ nombre con la variable de error global de la aplicación. Además se está evita
 variables globales.
 * Se agrega la función TrimEndLine() para quitar un salto de línea al final de una
 cadena.
+* Se modifica f2N, para fijar siempre el punto decimal como ".".
+* Se modifica f2S(), proque se detectó problemas en Win32.
 
  Descripción
  ============
@@ -41,17 +50,20 @@ function MsgYesNoCancel(txt: string): byte;
 function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
 //funciones diversas
 function Explode(delimiter:string; str:string):TStringDynArray;
+function Join(delimiter: char; const a: TStringDynArray): string;
 function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 procedure AnchorTo(Ctl: TControl; Side: TAnchorKind; Sibling: TControl;
   Space: integer = 0; Internal: Boolean = false);
 procedure TrimEndLine(var cad: string);
+function StringLike(const str: string; mask: string): boolean;
 procedure StringToFile(const s: string; const FileName: string);
 function StringFromFile(const FileName: string): string;
-function StringLike(const str: string; mask: string): boolean;
+function AddStringToFile(txt: string; const FileName: string): boolean;
 //Utilidades para menús
 function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent): TMenuItem;
 procedure CheckOnlyOneItem(item: TMenuItem);
 procedure CheckOnlyOneItem(Menu: TMenuItem; Caption: string);
+function LoadPNGToImageList(imagList16: TImageList; imgFile: string): Integer;
 //Genera un nombre distinto de archivo
 function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
 //Genera un nombre distinto de carpeta
@@ -222,6 +234,27 @@ begin
   SetLength(Result,n);
   Result[n-1] := str;
 end;
+function Join(delimiter: char; const a: TStringDynArray): string;
+var
+  i: Integer;
+begin
+{
+linea := #9 + #9 + 'a'+#9 + 'b' + #9;
+debugln('linea ini=|' + linea + '|');
+debugln('long ini=' + IntToStr(length(linea)));
+a := explode(#9, linea);
+linea := join(a, #9);
+debugln('linea fin=|' + linea + '|');
+debugln('long fin=' + IntToStr(length(linea)));
+}
+  Result := '';
+  for i:=0 to high(a) do begin
+    if i=0 then
+      Result := a[0]
+    else
+      Result := Result  + delimiter + a[i];
+  end;
+end;
 function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 //Ejecuta un programa. Devuelve FALSE si hubo error
 var
@@ -286,6 +319,22 @@ begin
     delete(cad, length(cad)-lSalto +1 ,lSalto);
   end;
 end;
+function StringLike(const str: string; mask: string): boolean;
+{Utilidad para comparación de cadenas al estilo de VB. El patrón de comparación es
+"mask" y tiene los siguientes comodines:
+'?' -> coincide con cualquier caracter.
+'*' -> coincide con cualquier texto.
+'#' -> coincide con cualquier caracter numércio.
+'[]' -> indica un conjunto de cacacteres.
+}
+var
+  msk: TMask;
+begin
+  mask := StringReplace(mask, '#', '[0-9]', [rfReplaceAll]);
+  msk := Tmask.Create(mask);
+  Result := msk.Matches(str);
+  msk.Destroy;
+end;
 procedure StringToFile(const s: string; const FileName: string);
 ///Guarda una cadena a un archivo. El archivo debe estar la codificaión del sistema.
 var
@@ -311,22 +360,25 @@ begin
     FreeAndNil(FileStream);
   end;
 end;
-function StringLike(const str: string; mask: string): boolean;
-{Utilidada para comparación de cadenas al estilo de VB. El patrón de comparación es
-"mask" y tiene los siguientes comodines:
-'?' -> coincide con cualquier caracter.
-'*' -> coincide con cualquier texto.
-'[]' -> indica un conjunto de cacacteres.
-}
+function AddStringToFile(txt: string; const FileName: string): boolean;
+{Escribe una cadena de texto a un archivo. }
 var
-  msk: TMask;
+  f : Textfile;
 begin
-  mask := StringReplace(mask, '#', '[0-9]', [rfReplaceAll]);
-  msk := Tmask.Create(mask);
-  Result := msk.Matches(str);
-  msk.Destroy;
-end;
-//Utilidades para menús
+  Result := False;
+  AssignFile(f, FileName);
+  try
+    if FileExists(FileName) = False then begin
+      Rewrite(f)
+    end else begin
+      Append(f);
+    end;
+    Writeln(f, txt);
+    Result := True;
+  finally
+    CloseFile(f);
+  end;
+end;//Utilidades para menús
 function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent
   ): TMenuItem;
 //Agrega un ítema un menú. Devuelve la refrecnia ál nuevo ítem agregado.
@@ -374,7 +426,17 @@ begin
   if it = nil then exit;   //no encontró
   CheckOnlyOneItem(it);   //marca
 end;
-
+function LoadPNGToImageList(imagList16: TImageList; imgFile: string): Integer;
+{Rutina para cargar un archivo PNG, en un ImageList. Devuelve el índice de la imagen}
+var
+  pngbmp: TPortableNetworkGraphic;
+begin
+  if not FileExistsUTF8(imgFile) then exit(-1);
+  pngbmp:=TPortableNetworkGraphic.Create;
+  pngbmp.LoadFromFile(imgFile);
+  Result:= imagList16.Add(pngbmp, nil);
+  pngbmp.Destroy;
+end;
 function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
 {Genera un nombre diferente de archivo, tomando el nombre dado como raiz.}
 var i : Integer;    //Número de intentos con el nombre de archivo de salida
@@ -450,10 +512,12 @@ End;
 function f2N(s: String): Double;
 //Convierte cadena de disco a número. Independiente de la configuración regional
 begin
-    Result := StrToFloat(s);     //usa siempre el punto decimal
+  DefaultFormatSettings.DecimalSeparator:='.';   //para uniformizar el formato
+  Result := StrToFloat(s);     //usa siempre el punto decimal
 End;
 function f2N(s: WideString): Double;
 begin
+  DefaultFormatSettings.DecimalSeparator:='.';   //para uniformizar el formato
   Result := StrToFloat(AnsiString(s));     //usa siempre el punto decimal
 end;
 function B2f(b: Boolean): String;
@@ -494,12 +558,14 @@ end;
 function S2f(s : String) : String;
 //Convierte cadena a formato para guardar en disco, en una línea.
 begin
-  Result := ReplaceText(s, LineEnding, #1);
+  //Inicialmente se trabajó con ReplaceText() aquí, pero daba cadena vacía en Win32
+  Result := StringReplace(s, LineEnding, #1, [rfReplaceAll]);
 end;
 function f2S(s : String) : String;
 //Convierte cadena leída de disco a cadena multilínea.
 begin
-  Result := ReplaceText(s, #1, LineEnding);
+  //Inicialmente se trabajó con ReplaceText() aquí, pero daba cadena vacía en Win32
+  Result := StringReplace(s, #1, LineEnding, [rfReplaceAll]);
 end;
 
 function DT2Number(const dt: TDateTime): Int64;
