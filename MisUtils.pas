@@ -1,23 +1,10 @@
-{
-MisUtils 0.6b
-============
-Por Tito Hinostroza 06/02/2017
-* Se agrega la función LoadPNGToImageList()
-* Se agrega la función AddStringToFile().
-* Se agrega una versión simple el método Join().
-
-MisUtils 0.5b
-============
+{MisUtils 0.4
+ ============
  Por Tito Hinostroza 13/05/2015
-* Se agregan las funciones DT2Number() and Number2DT().
-* Se agrega la función StringLike().
-* Se elimina la variable global msjError, ya que se encontró casos de duplicidad de
-nombre con la variable de error global de la aplicación. Además se está evitando usar
-variables globales.
-* Se agrega la función TrimEndLine() para quitar un salto de línea al final de una
-cadena.
-* Se modifica f2N, para fijar siempre el punto decimal como ".".
-* Se modifica f2S(), proque se detectó problemas en Win32.
+* Se agregan las funciones N2f(), I2f() y f2I().
+* Se modifica Exec() para no usar CommandLine, ya que está obsoleto.
+* Se sobrecargan las funciones f2D(), f2I() para sopotar WideString.
+* Se cambia el parámetro de N2f(), de "Single" a "Double".
 
  Descripción
  ============
@@ -30,11 +17,11 @@ unit MisUtils;
 
 interface
 
-uses  Classes, SysUtils, Forms, Graphics, Dialogs, process, Controls, lclType,
-  FileUtil, Masks, types, dateutils, strutils, Menus, LCLProc, LCLIntf;
+uses  Classes, SysUtils, Forms, Graphics, Dialogs, process, Controls,
+      lclType, FileUtil, types, dateutils, strutils, Menus, LCLProc, LCLIntf;
 
 var
-//  msjError  : string;       //mensaje de error de la aplicación
+  msjError  : string;       //mensaje de error de la aplicación
   dictionary: TstringList;  //diccionario para el manejo de mensajes
   TranslateMsgs: boolean;   //activa la traducción del mensaje
 //funciones para mostrar mensajes
@@ -51,20 +38,15 @@ function MsgYesNoCancel(txt: string): byte;
 function MsgYesNoCancel(Fmt: string; const Args: array of const): byte;
 //funciones diversas
 function Explode(delimiter:string; str:string):TStringDynArray;
-function Join(delimiter: char; const a: TStringDynArray): string;
 function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 procedure AnchorTo(Ctl: TControl; Side: TAnchorKind; Sibling: TControl;
   Space: integer = 0; Internal: Boolean = false);
-procedure TrimEndLine(var cad: string);
-function StringLike(const str: string; mask: string): boolean;
 procedure StringToFile(const s: string; const FileName: string);
 function StringFromFile(const FileName: string): string;
-function AddStringToFile(txt: string; const FileName: string): boolean;
 //Utilidades para menús
 function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent): TMenuItem;
 procedure CheckOnlyOneItem(item: TMenuItem);
 procedure CheckOnlyOneItem(Menu: TMenuItem; Caption: string);
-function LoadPNGToImageList(imagList16: TImageList; imgFile: string): Integer;
 //Genera un nombre distinto de archivo
 function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
 //Genera un nombre distinto de carpeta
@@ -84,11 +66,6 @@ Function f2D(s : WideString) : TDateTime;
 Function S2f(s : String) : String;
 function f2S(s : String) : String;
 
-function DT2Number(const dt: TDateTime): Int64;
-function Number2DT(n: Int64): TDateTime;
-function T2f(const dt: TDateTime): string;
-function f2T(hex: string): TDateTime;
-
 //Funciones del diccionario
 procedure dicClear;  //limpia el diccionario
 procedure dicSet(key, value: string);  //fija una entrada del diccionario
@@ -96,7 +73,6 @@ procedure dicDel(key: string);  //limpia una entrada del diccionario
 procedure TransCapCtrls(TheForm: TForm; Caption, value: string);  //traduce un mensaje de un control
 function dic(key: string): string;     //lee un mensaje traducido
 function dic(Fmt : String; const Args : Array of const): string; //lee un mensaje traducido
-//manejo de consola
 procedure console(Fmt : String; const Args : Array of const);  //muestra mensaje en consola
 procedure consoleTickStart;  //inicia contador de tiempo
 procedure consoleTickCount(msg: string);  //muestra diferencia de tiempo
@@ -235,27 +211,6 @@ begin
   SetLength(Result,n);
   Result[n-1] := str;
 end;
-function Join(delimiter: char; const a: TStringDynArray): string;
-var
-  i: Integer;
-begin
-{
-linea := #9 + #9 + 'a'+#9 + 'b' + #9;
-debugln('linea ini=|' + linea + '|');
-debugln('long ini=' + IntToStr(length(linea)));
-a := explode(#9, linea);
-linea := join(a, #9);
-debugln('linea fin=|' + linea + '|');
-debugln('long fin=' + IntToStr(length(linea)));
-}
-  Result := '';
-  for i:=0 to high(a) do begin
-    if i=0 then
-      Result := a[0]
-    else
-      Result := Result  + delimiter + a[i];
-  end;
-end;
 function Exec(com, par: string; WaitOnExit: boolean = false): boolean;
 //Ejecuta un programa. Devuelve FALSE si hubo error
 var
@@ -308,34 +263,6 @@ begin
     end;
     Ctl.Anchors:=Ctl.Anchors+[Side];  //agrega bandera de anclaje
 end;
-procedure TrimEndLine(var cad: string);
-{Verifica si la cadena incluye un salto de línea al final y de ser así, lo quita}
-var
-  lSalto: Integer;
-begin
-  lSalto := length(LineEnding);
-  if length(cad)<lSalto then exit;  //no puede contener salto
-  if RightStr(cad, lSalto) = LineEnding then begin
-    //Contiene el salto
-    delete(cad, length(cad)-lSalto +1 ,lSalto);
-  end;
-end;
-function StringLike(const str: string; mask: string): boolean;
-{Utilidad para comparación de cadenas al estilo de VB. El patrón de comparación es
-"mask" y tiene los siguientes comodines:
-'?' -> coincide con cualquier caracter.
-'*' -> coincide con cualquier texto.
-'#' -> coincide con cualquier caracter numércio.
-'[]' -> indica un conjunto de cacacteres.
-}
-var
-  msk: TMask;
-begin
-  mask := StringReplace(mask, '#', '[0-9]', [rfReplaceAll]);
-  msk := Tmask.Create(mask);
-  Result := msk.Matches(str);
-  msk.Destroy;
-end;
 procedure StringToFile(const s: string; const FileName: string);
 ///Guarda una cadena a un archivo. El archivo debe estar la codificaión del sistema.
 var
@@ -361,25 +288,7 @@ begin
     FreeAndNil(FileStream);
   end;
 end;
-function AddStringToFile(txt: string; const FileName: string): boolean;
-{Escribe una cadena de texto a un archivo. }
-var
-  f : Textfile;
-begin
-  Result := False;
-  AssignFile(f, FileName);
-  try
-    if FileExists(FileName) = False then begin
-      Rewrite(f)
-    end else begin
-      Append(f);
-    end;
-    Writeln(f, txt);
-    Result := True;
-  finally
-    CloseFile(f);
-  end;
-end;//Utilidades para menús
+//Utilidades para menús
 function AddItemToMenu(menu: TMenuItem; txt: string; evento: TNotifyEvent
   ): TMenuItem;
 //Agrega un ítema un menú. Devuelve la refrecnia ál nuevo ítem agregado.
@@ -427,17 +336,7 @@ begin
   if it = nil then exit;   //no encontró
   CheckOnlyOneItem(it);   //marca
 end;
-function LoadPNGToImageList(imagList16: TImageList; imgFile: string): Integer;
-{Rutina para cargar un archivo PNG, en un ImageList. Devuelve el índice de la imagen}
-var
-  pngbmp: TPortableNetworkGraphic;
-begin
-  if not FileExistsUTF8(imgFile) then exit(-1);
-  pngbmp:=TPortableNetworkGraphic.Create;
-  pngbmp.LoadFromFile(imgFile);
-  Result:= imagList16.Add(pngbmp, nil);
-  pngbmp.Destroy;
-end;
+
 function GetNewFileName(nomBase: String; maxNumFile: integer = 10): String;
 {Genera un nombre diferente de archivo, tomando el nombre dado como raiz.}
 var i : Integer;    //Número de intentos con el nombre de archivo de salida
@@ -513,12 +412,10 @@ End;
 function f2N(s: String): Double;
 //Convierte cadena de disco a número. Independiente de la configuración regional
 begin
-  DefaultFormatSettings.DecimalSeparator:='.';   //para uniformizar el formato
-  Result := StrToFloat(s);     //usa siempre el punto decimal
+    Result := StrToFloat(s);     //usa siempre el punto decimal
 End;
 function f2N(s: WideString): Double;
 begin
-  DefaultFormatSettings.DecimalSeparator:='.';   //para uniformizar el formato
   Result := StrToFloat(AnsiString(s));     //usa siempre el punto decimal
 end;
 function B2f(b: Boolean): String;
@@ -559,73 +456,14 @@ end;
 function S2f(s : String) : String;
 //Convierte cadena a formato para guardar en disco, en una línea.
 begin
-  //Inicialmente se trabajó con ReplaceText() aquí, pero daba cadena vacía en Win32
-  Result := StringReplace(s, LineEnding, #1, [rfReplaceAll]);
+  Result := ReplaceText(s, LineEnding, #1);
 end;
 function f2S(s : String) : String;
 //Convierte cadena leída de disco a cadena multilínea.
 begin
-  //Inicialmente se trabajó con ReplaceText() aquí, pero daba cadena vacía en Win32
-  Result := StringReplace(s, #1, LineEnding, [rfReplaceAll]);
+  Result := ReplaceText(s, #1, LineEnding);
 end;
 
-function DT2Number(const dt: TDateTime): Int64;
-{Convierte fecha-hora en número entero (no incluye milisegundos). Esta función se creó
-como reemplazo a DateTimeToUnix(), ya que en la presente versión de Lazarus, tiene
-errores de redondeo.}
-var
-  hh, nn, ss, MilliSecond: word;
-begin
-  DecodeTime(dt, hh, nn, ss, MilliSecond);
-  Result := trunc(dt)*86400 + hh * 3600 + nn * 60 + ss;
-end;
-function Number2DT(n: Int64): TDateTime;
-{Función opuesta de DT2Number()}
-var
-  day, hh, nn, ss: Int64;
-begin
-  day := n div 86400;
-  n := n mod 86400;
-  hh := n div 3600;
-  n := n mod 3600;
-  nn := n div 60;
-  ss := n mod 60;
-  Result := EncodeTime(hh,nn,ss,0) + day;
-end;
-function T2f(const dt: TDateTime): string;
-{Codifica una fecha-hora en una cadena compacta, usando hexadecimal. Usaulmente para
-una fecha generará solo 8 caracteres.}
-var
-  n: Int64;
-begin
-  n := DT2Number(dt);
-  if n=0 then
-    Result := '0'
-  else if n<=$FF then
-    Result := IntTohex(n,2)
-  else if n<=$FFF then
-    Result := IntTohex(n,3)
-  else if n<=$FFFF then
-    Result := IntTohex(n,4)
-  else if n<=$FFFFF then
-    Result := IntTohex(n,5)
-  else if n<=$FFFFFF then
-    Result := IntTohex(n,6)
-  else if n<=$FFFFFFF then
-    Result := IntTohex(n,7)
-  else if n<=$FFFFFFFF then
-    Result := IntTohex(n,8)
-  else
-    Result := IntTohex(n,9);
-end;
-function f2T(hex: string): TDateTime;
-{Restaura la cadena convertida por DT2f}
-var
-  m: Int64;
-begin
-  m := StrToInt64('$'+hex);
-  Result := Number2DT(m);
-end;
 
 procedure dicClear;
 //Limpia el diccionario, de modo que no se traducirá ningún mensaje
