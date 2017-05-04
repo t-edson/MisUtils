@@ -17,17 +17,17 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Unit1"/>
+        <IsVisibleTab Value="True"/>
         <TopLine Value="17"/>
-        <CursorPos Y="52"/>
+        <CursorPos X="13" Y="21"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="..\MisUtils.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <CursorPos X="59" Y="5"/>
+        <CursorPos X="37" Y="18"/>
         <UsageCount Value="10"/>
         <Bookmarks Count="1">
           <Item0 X="3" Y="218" ID="1"/>
@@ -56,7 +56,7 @@
         <UsageCount Value="10"/>
       </Unit5>
     </Units>
-    <JumpHistory Count="28" HistoryIndex="27">
+    <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="..\MisUtils.pas"/>
         <Caret Line="46" Column="48" TopLine="29"/>
@@ -164,6 +164,14 @@
         <Filename Value="..\MisUtils.pas"/>
         <Caret Line="39" Column="10" TopLine="21"/>
       </Position28>
+      <Position29>
+        <Filename Value="..\MisUtils.pas"/>
+        <Caret Line="18" Column="10" TopLine="13"/>
+      </Position29>
+      <Position30>
+        <Filename Value="..\MisUtils.pas"/>
+        <Caret Line="67" Column="20" TopLine="40"/>
+      </Position30>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>
