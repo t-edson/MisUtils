@@ -1,5 +1,5 @@
 {
-MisUtils 0.6b
+MisUtils 0.6
 ============
 Por Tito Hinostroza 06/02/2017
 * Se agrega la función LoadPNGToImageList()
