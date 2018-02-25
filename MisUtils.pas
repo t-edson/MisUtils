@@ -517,7 +517,7 @@ var
   hh, nn, ss, MilliSecond: word;
 begin
   DecodeTime(dt, hh, nn, ss, MilliSecond);
-  Result := trunc(dt)*86400 + hh * 3600 + nn * 60 + ss;
+  Result := trunc(dt)*86400 {%H-}+ hh * 3600 {%H-}+ nn * 60 + ss;
 end;
 function Number2DT(n: Int64): TDateTime;
 {Función opuesta de DT2Number()}
